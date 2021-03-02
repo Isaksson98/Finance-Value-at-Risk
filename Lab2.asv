@@ -88,7 +88,7 @@ VaR_95_hull(i + 1) = delta_VP_sorted(percentile_95); %ska man ta abs här?
 VaR_99_hull(i + 1) = delta_VP_sorted(percentile_99);
 end
 
-%% 1 e) %fråga om vi har gjort rätt innan vi tillämpar för alla deluppgifter.
+%% 1 e)
 
 %för b
 LP_b = r * Vp;
@@ -121,10 +121,40 @@ chi_99 = chi2inv(0.99,1);
 
 %% 2 a)
 
-u_hat = 
+u_hat = prctile(sort(r), 95);
 y = r-u_hat;
-x = fmincon(@(x)MLE(y), [1 0.4], [], [], []);
+n_u = sum(r > u_hat)
 
+[beta_xi, val] = fmincon(@(x)EVT(x,y, n_u), [0.9 0.4], [], [], [], [], [0 0], []);
+
+beta = beta_xi(1);
+xi = beta_xi(2);
+
+VaR_EVT = -(u_hat + (beta / xi) * (((length(r) / n_u) * 0.95)^(-xi) - 1) ) * Vp
+
+%b)
+
+plot(sigma_EWMA)
+
+average_volatility = zeros((length(sigma_EWMA) - 260), 1);
+
+for i = 1:(length(average_volatility))
+   average_volatility(i) = mean(sigma_EWMA(i:i + 260)); 
+end
+[argvalue, argmax] = max(average_volatility);
+beginning = argmax;
+ending = argmax + 260; %%hittar perioden med stör
+
+u_hat = prctile(sort(r(beginning:ending)), 95);
+y = r-u_hat;
+n_u = sum(r > u_hat)
+
+[beta_xi, val] = fmincon(@(x)EVT(x,y, n_u), [0.9 0.4], [], [], [], [], [0 0], []);
+
+beta = beta_xi(1);
+xi = beta_xi(2);
+
+VaR_EVT_volatile = -(u_hat + (beta / xi) * (((length(r) / n_u) * 0.95)^(-xi) - 1) ) * Vp
 
 
 
