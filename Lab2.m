@@ -1,5 +1,5 @@
 %% 1 a)
-
+clear;
 filename='timeSeries.xlsx';
 portfolio = xlsread(filename, 'Problem 1 and 2');
 portfolio = flip(portfolio);
