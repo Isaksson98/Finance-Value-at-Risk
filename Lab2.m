@@ -126,6 +126,9 @@ y = r-u_hat;
 val = fmincon(@(x)MLE(x,y), [0.9 0.4], [], []);
 
 
+%%%%kommentarkommentar
+
+
 
 
 
