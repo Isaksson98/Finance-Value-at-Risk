@@ -20,9 +20,9 @@ sigma_p = sqrt(weights' * cov_matrix * weights);
 
 Vp = 10^7;
 
-VaR_95 = Vp * norminv(0.95) * sigma_p
-VaR_975 = Vp * norminv(0.975) * sigma_p
-VaR_99 = Vp * norminv(0.99) * sigma_p
+VaR_95 = Vp * norminv(0.95) * sigma_p;
+VaR_975 = Vp * norminv(0.975) * sigma_p;
+VaR_99 = Vp * norminv(0.99) * sigma_p;
 
 %% 1 b)
 
@@ -34,8 +34,20 @@ end
 
 sigma_EWMA = EWMA(r, r(2)^2, 0.94);
 
-VaR_t_95 = (1 - exp(-norminv(0.95) * sigma_EWMA(502:length(u)))) * Vp;
-VaR_t_99 = (1 - exp(-norminv(0.99) * sigma_EWMA(502:length(u)))) * Vp;
+VaR_t_95 = zeros(length(u),1);
+VaR_t_99 = zeros(length(u),1);
+
+VaR_t_95(502:length(u)) = (1 - exp(-norminv(0.95) * sigma_EWMA(502:length(u)))) * Vp;
+VaR_t_99(502:length(u)) = (1 - exp(-norminv(0.99) * sigma_EWMA(502:length(u)))) * Vp;
+
+figure(1)
+
+plot(VaR_t_95)
+title("konfidensnivå 95%")
+figure(2)
+
+plot(VaR_t_99)
+title("konfidensnivå 99%")
 
 %% 1 c)
 
@@ -47,16 +59,24 @@ VaR_99_rullande = zeros(length(u),1);
 
 delta_Vp = zeros(1, length(u));
 
-for i = 501:length(u) %%fel värden - vet varför fel instoppat
+for i = 501:length(u)
 delta_Vp = u(i - 499:i,:) * (weights * Vp);
 delta_VP_sorted = sort(delta_Vp);
 
-VaR_95_rullande(i + 1) = delta_VP_sorted(percentile_95); %konstga värden???
+VaR_95_rullande(i + 1) = delta_VP_sorted(percentile_95);
 VaR_99_rullande(i + 1) = delta_VP_sorted(percentile_99);
 end
 
 delta_VP_sorted = sort(delta_Vp);
 ES_95 = mean(delta_VP_sorted(1:25));
+
+figure(3)
+plot(-VaR_95_rullande)
+title("konfidensnivå 95%")
+
+figure(4)
+plot(-VaR_99_rullande)
+title("konfidensnivå 99%")
 
 %% 1 d)
 
@@ -79,7 +99,7 @@ sigma_i = EWMA(R, sigma_init, 0.94);
     
 for i = 501:length(R)
     
-R_star = R .* sigma_i(1:length(sigma_i) - 1) / sigma_i(i);
+R_star = R .* sigma_i(1:length(sigma_i) - 1) / sigma_i(i + 1);
     
 delta_Vp = R_star(i - 499:i,:) * Vp;
 delta_VP_sorted = sort(delta_Vp);
@@ -87,6 +107,14 @@ delta_VP_sorted = sort(delta_Vp);
 VaR_95_hull(i + 1) = delta_VP_sorted(percentile_95); %ska man ta abs här?
 VaR_99_hull(i + 1) = delta_VP_sorted(percentile_99);
 end
+
+figure(3)
+plot(-VaR_95_hull)
+title("konfidensnivå 95%")
+
+figure(4)
+plot(-VaR_99_hull)
+title("konfidensnivå 99%")
 
 %% 1 e)
 
@@ -158,8 +186,41 @@ VaR_EVT_volatile = -(u_hat + (beta / xi) * (((length(r) / n_u) * 0.95)^(-xi) - 1
 
 %% 3 a)
 
+problem_3 = xlsread(filename, 'Problem 3');
 
+valuation_date = '2-Feb-2021';
+S = 3826.31;
+r = 0.021;
+div = 0.05;
 
+K1 = 3800; %call
+T1 = days252bus(valuation_date, '21-Mar-2021') / 252;
+Bid1 = 20.80;
+Ask1 = 20.99;
+Holdings1 = 10000;
 
+K2 = 3750; %put
+T2 = days252bus(valuation_date, '21-Apr-2021') / 252;
+Bid2 = 22.67;
+Ask2 = 22.81;
+Holdings2 = 10000;
+
+K3 = 3850; %call
+T3 = days252bus(valuation_date, '2021-Sep-21') / 252;
+Bid3 = 21.88;
+Ask3 = 22.03;
+Holdings3 = 20000;
+
+%Implicit_Sigma
+
+implicit_sigma_1 = Implicit_Sigma(Ask1, S * exp(-div * T1), K1, r, T1, 1);
+implicit_sigma_2 = Implicit_Sigma(Ask2, S * exp(-div * T2), K2, r, T2, 0);
+implicit_sigma_3 = Implicit_Sigma(Ask3, S * exp(-div * T3), K3, r, T3, 1);
+
+%BSM
+
+Price1 = BSM(S * exp(-div * T1), K1, r, implicit_sigma_1, T1);
+Price2 = BSM_put(S * exp(-div * T2), K2, r, implicit_sigma_2, T2);
+Price3 = BSM(S * exp(-div * T3), K3, r, implicit_sigma_3, T3);
 
 
