@@ -135,18 +135,18 @@ LP_c = u * weights * Vp;
 [h0_c99_alpha005, ER_c99_alpha005] = calc_error_rate(LP_c(502:end), -VaR_99_rullande(502:length(VaR_99_rullande)-1), 0.99, 0.01 / 2);
 
 %för c
-LP_d = u * weights * Vp;
+LP_c = u * weights * Vp;
 [h0_d95_alpha025, ER_d95_alpha025] = calc_error_rate(LP_d(502:end), -VaR_95_hull(502:length(VaR_95_hull)-1), 0.95, 0.05 / 2);
-[h0_d95_alpha005, ER_d95_alpha005] = calc_error_rate(LP_d(502:end), -VaR_95_hull(502:length(VaR_95_hull)-1), 0.95, 0.01 / 2);
+[h0_d95_alpha005, ER_d95_alpha005] = calc_error_rate(LP_d(502:end), -VaR_95_rullande(502:length(VaR_95_rullande)-1), 0.95, 0.01 / 2);
 
-[h0_d99_alpha025, ER_d99_alpha025] = calc_error_rate(LP_d(502:end), -VaR_99_hull(502:length(VaR_99_hull)-1), 0.99, 0.05 / 2);
-[h0_d99_alpha005, ER_d99_alpha005] = calc_error_rate(LP_d(502:end), -VaR_99_hull(502:length(VaR_99_hull)-1), 0.99, 0.01 / 2);
+[h0_d99_alpha025, ER_d99_alpha025] = calc_error_rate(LP_d(502:end), -VaR_99_rullande(502:length(VaR_99_rullande)-1), 0.99, 0.05 / 2);
+[h0_d99_alpha005, ER_d99_alpha005] = calc_error_rate(LP_d(502:end), -VaR_99_rullande(502:length(VaR_99_rullande)-1), 0.99, 0.01 / 2);
 
 %% 1 f)
 
 %b)
-test_storhet_b95 = serialdependance(VaR_t_95(502:length(VaR_t_95)),LP_b(502:end))
-test_storhet_b99 = serialdependance(VaR_t_95(502:length(VaR_t_95)),LP_b(502:end))
+test_storhet_b95 = serialdependance(VaR_t_95,LP_b(502:end))
+test_storhet_b99 = serialdependance(VaR_t_99,LP_b(502:end))
 
 %c)
 test_storhet_c95 = serialdependance(-VaR_95_rullande(502:length(VaR_95_rullande)-1),LP_c(502:end))
@@ -231,16 +231,10 @@ implicit_sigma_1 = Implicit_Sigma(Ask1, S * exp(-div * T1), K1, r, T1, 1);
 implicit_sigma_2 = Implicit_Sigma(Ask2, S * exp(-div * T2), K2, r, T2, 0);
 implicit_sigma_3 = Implicit_Sigma(Ask3, S * exp(-div * T3), K3, r, T3, 1);
 
-%Prices
+%BSM
 
 Price1 = BSM(S * exp(-div * T1), K1, r, implicit_sigma_1, T1);
 Price2 = BSM_put(S * exp(-div * T2), K2, r, implicit_sigma_2, T2);
 Price3 = BSM(S * exp(-div * T3), K3, r, implicit_sigma_3, T3);
-
-%Greeks
-
-[delta1, vega1, rho1] = Greeks(S, K1, r, implicit_sigma_1, T1, div);
-[delta2, vega2, rho2] = Greeks(S, K2, r, implicit_sigma_2, T2, div);
-[delta3, vega3, rho3] = Greeks(S, K3, r, implicit_sigma_3, T3, div);
 
 
