@@ -41,14 +41,16 @@ VaR_t_95(502:length(u)) = (1 - exp(-norminv(0.95) * sigma_EWMA(502:length(u)))) 
 VaR_t_99(502:length(u)) = (1 - exp(-norminv(0.99) * sigma_EWMA(502:length(u)))) * Vp;
 
 figure(1)
-
 plot(VaR_t_95)
 title("konfidensnivå 95%")
-figure(2)
+xlabel("t")
+ylabel("VaR")
 
+figure(2)
 plot(VaR_t_99)
 title("konfidensnivå 99%")
-
+xlabel("t")
+ylabel("VaR")
 %% 1 c)
 
 percentile_95 = floor(500 * (1 - 0.95));
@@ -73,10 +75,14 @@ ES_95 = mean(delta_VP_sorted(1:25));
 figure(3)
 plot(-VaR_95_rullande)
 title("konfidensnivå 95%")
+xlabel("t")
+ylabel("VaR")
 
 figure(4)
 plot(-VaR_99_rullande)
 title("konfidensnivå 99%")
+xlabel("t")
+ylabel("VaR")
 
 %% 1 d)
 
@@ -108,14 +114,17 @@ VaR_95_hull(i + 1) = delta_VP_sorted(percentile_95); %ska man ta abs här?
 VaR_99_hull(i + 1) = delta_VP_sorted(percentile_99);
 end
 
-figure(3)
+figure(5)
 plot(-VaR_95_hull)
 title("konfidensnivå 95%")
+xlabel("t")
+ylabel("VaR")
 
-figure(4)
+figure(6)
 plot(-VaR_99_hull)
 title("konfidensnivå 99%")
-
+xlabel("t")
+ylabel("VaR")
 %% 1 e)
 
 %för b
@@ -203,9 +212,9 @@ VaR_EVT_volatile = -(u_hat + (beta / xi) * (((length(r) / n_u) * 0.95)^(-xi) - 1
 problem_3 = xlsread(filename, 'Problem 3');
 
 %Risk factors
-SP500 = problem_3(:,1);
-sigma_VIX = problem_3(:,2);
-rate = problem_3(:,3);
+SP500 = flip(problem_3(:,1));
+VIX = flip(problem_3(:,2));
+libor = flip(problem_3(:,3));
 
 valuation_date = '2-Feb-2021';
 S = 3826.31;
@@ -214,38 +223,61 @@ div = 0.05;
 
 K1 = 3800; %call
 T1 = days252bus(valuation_date, '21-Mar-2021') / 252;
-Bid1 = 20.80;
-Ask1 = 20.99;
+implicit_volatility_bid1 = 20.80;
+implicit_volatility_ask1 = 20.99;
 Holdings1 = 10000;
 
 K2 = 3750; %put
 T2 = days252bus(valuation_date, '21-Apr-2021') / 252;
-Bid2 = 22.67;
-Ask2 = 22.81;
+implicit_volatility_bid2 = 22.67;
+implicit_volatility_ask2 = 22.81;
 Holdings2 = 10000;
 
 K3 = 3850; %call
 T3 = days252bus(valuation_date, '2021-Sep-21') / 252;
-Bid3 = 21.88;
-Ask3 = 22.03;
+implicit_volatility_bid3 = 21.88;
+implicit_volatility_ask3 = 22.03;
 Holdings3 = 20000;
-
-%Implicit_Sigma
-
-implicit_sigma_1 = Implicit_Sigma(Ask1, S * exp(-div * T1), K1, r, T1, 1);
-implicit_sigma_2 = Implicit_Sigma(Ask2, S * exp(-div * T2), K2, r, T2, 0);
-implicit_sigma_3 = Implicit_Sigma(Ask3, S * exp(-div * T3), K3, r, T3, 1);
 
 %Prices
 
-Price1 = BSM(S * exp(-div * T1), K1, r, implicit_sigma_1, T1);
-Price2 = BSM_put(S * exp(-div * T2), K2, r, implicit_sigma_2, T2);
-Price3 = BSM(S * exp(-div * T3), K3, r, implicit_sigma_3, T3);
+price1 = BSM(S * exp(-div * T1), K1, r, implicit_volatility_ask1, T1);
+price2 = BSM_put(S * exp(-div * T2), K2, r, implicit_volatility_ask2, T2);
+price3 = BSM(S * exp(-div * T3), K3, r, implicit_volatility_ask3, T3);
 
 %Greeks
 
-[delta1, vega1, rho1] = Greeks(S, K1, r, implicit_sigma_1, T1, div);
-[delta2, vega2, rho2] = Greeks(S, K2, r, implicit_sigma_2, T2, div);
-[delta3, vega3, rho3] = Greeks(S, K3, r, implicit_sigma_3, T3, div);
+[delta1, vega1, rho1] = Greeks(S, K1, r, implicit_volatility_ask1, T1, div);
+[delta2, vega2, rho2] = Greeks(S, K2, r, implicit_volatility_ask2, T2, div);
+[delta3, vega3, rho3] = Greeks(S, K3, r, implicit_volatility_ask3, T3, div);
 
-%
+%Stora G
+
+G = [[delta1, delta2, delta3]; [vega1, vega2, vega3]; [rho1, rho2, rho3]];
+
+%H-streck
+
+H_streck = 0;
+
+%lambda
+
+lambda = zeros(length(SP500), 3);
+
+for i = 2:length(SP500) %är detta rätt sätt att räkna ut förändringarna på? troligtvis inte
+    lambda(i, 1) = (SP500(i) - SP500(i - 1)) / SP500(i - 1);
+    lambda(i,2) = (VIX(i) - VIX(i - 1)) / VIX(i - 1);
+    lambda(i,3) = (libor(i) - libor(i - 1)) / libor(i - 1);
+end
+
+%kovariansmatris lambda
+
+cov_lambda = cov(lambda(2:length(lambda),:));
+
+%portföljvolatilitet
+
+h = [10000, 10000, 20000];
+V = price1 * h(1) + price2 * h(2) + price3 * h(3);
+
+sigma_p_optioner = sqrt((1 / (V ^ 2)) * h * G' * cov_lambda * G * h')
+
+
