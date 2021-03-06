@@ -202,6 +202,11 @@ VaR_EVT_volatile = -(u_hat + (beta / xi) * (((length(r) / n_u) * 0.95)^(-xi) - 1
 
 problem_3 = xlsread(filename, 'Problem 3');
 
+%Risk factors
+SP500 = problem_3(:,1);
+sigma_VIX = problem_3(:,2);
+rate = problem_3(:,3);
+
 valuation_date = '2-Feb-2021';
 S = 3826.31;
 r = 0.021;
@@ -243,4 +248,4 @@ Price3 = BSM(S * exp(-div * T3), K3, r, implicit_sigma_3, T3);
 [delta2, vega2, rho2] = Greeks(S, K2, r, implicit_sigma_2, T2, div);
 [delta3, vega3, rho3] = Greeks(S, K3, r, implicit_sigma_3, T3, div);
 
-
+%
