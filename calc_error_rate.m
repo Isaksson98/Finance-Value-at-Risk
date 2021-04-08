@@ -9,6 +9,6 @@ T = length(L);
 p = 1 - c;
 
 Z = (X_T - T * p) / sqrt(T * p * (1 - p));
-h_0 = Z < norminv(1 - alpha);
+h_0 = Z < norminv(1 - alpha / 2) && Z < norminv(alpha / 2);
 
 end
